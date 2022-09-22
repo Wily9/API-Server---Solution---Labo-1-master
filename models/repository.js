@@ -122,6 +122,15 @@ class Repository {
         return false;
     }
 
+    valueMatch(value, searchValue) {
+        try {
+            return new RegExp('^' + searchValue.toLowerCase().replace(/\*/g, '.*') + '$').test(value.toString().toLowerCase());
+        } catch (error) {
+            console.log(error);
+            return false;
+        }
+    }
+
     compareNum(x, y) {
         if (x === y) return 0;
         else if (x < y) return -1;
@@ -144,6 +153,11 @@ class Repository {
             let model = this.model;
             let filteredAndSortedObjects = [];
             // TODO Laboratoire 2
+            // ? nom de champ = filtre
+            // sort=Category,des
+            // table de champs a trier
+            // comparaison avec valueMatch
+            // plusieurs tris
             let sortKeys = [];
             let searchKeys = [];
             Object.keys(params).forEach(function (paramName) {
