@@ -122,7 +122,7 @@ class Repository {
         return false;
     }
 
-    valueMatch(value, searchValue) {
+    valueMatch(value, searchValue) { //ValueMatch est pour les recherche de caractère (*a*) 
         try {
             return new RegExp('^' + searchValue.toLowerCase().replace(/\*/g, '.*') + '$').test(value.toString().toLowerCase());
         } catch (error) {
@@ -136,12 +136,61 @@ class Repository {
         else if (x < y) return -1;
         return 1;
     }
-
     innerCompare(x, y) {
         if ((typeof x) === 'string')
             return x.localeCompare(y);
         else
             return this.compareNum(x, y);
+    }
+    compare(itemX, itemY) {
+        let fieldIndex = 0;
+        let max = this.sortFields.length;
+        do {
+            let result = 0;
+            if (this.sortFields[fieldIndex].ascending)
+                result = this.innerCompare(itemX[this.sortFields[fieldIndex].name], itemY[this.sortFields[fieldIndex].name]);
+            else
+                result = this.innerCompare(itemY[this.sortFields[fieldIndex].name], itemX[this.sortFields[fieldIndex].name]);
+            if (result == 0)
+                fieldIndex++;
+            else
+                return result;
+        } while (fieldIndex < max);
+        return 0;
+    }
+
+    filterArray(searchKeys, objectsList, mySubString) {
+            let mappedObjects = []; 
+            let filteredObjects = [];
+            let sKeys = searchKeys.map(sKey => sKey.key); 
+            let sKeysValue = searchKeys.map(sKey => sKey.value); 
+            let currentResult;
+            
+            for(let i = 0; i < (sKeysValue.length); i++){
+            for(let object of sKeys){
+                    
+                    if(mappedObjects.length > 0 && i > 0){
+                        // console.log(mappedObjects[i][object]);
+                        currentResult = mappedObjects.filter( obj => obj[object] === sKeysValue[i]);
+                        if(currentResult != null && currentResult.length != 0 ){
+                            currentResult.forEach(cr => filteredObjects.push(cr));
+                        }                          
+                    }
+                    else{
+                        currentResult = objectsList.filter(obj => obj[object] === sKeysValue[i])
+                        if(currentResult != null && currentResult.length != 0){
+                            currentResult.forEach(cr => mappedObjects.push(cr));
+                            //mappedObjects.push(currentResult);
+                        }
+                    }
+                }
+            }
+            if(sKeysValue.length > 1){
+                return filteredObjects;
+            }
+            else{
+                return mappedObjects;  
+            }
     }
 
     getAll(params = null) {
@@ -180,11 +229,50 @@ class Repository {
                         searchKeys.push({key: paramName, value: params[paramName]});
                 }
             });
+            if(searchKeys.length != 0){
+                console.log(searchKeys);
+                let searchKeysMap = searchKeys.map(sKey => sKey.value); 
+                console.log(searchKeys[0].key);
+                console.log(searchKeys.value);
+                //console.log(searchKeys[key]);
+                //console.log(searchKeys[value]);
+                let debutEtoile = searchKeysMap.find( key => key.startsWith('*'));
+                let finEtoile = searchKeysMap.find( key => key.endsWith('*'));
+                let contenantEtoile = searchKeysMap.find( key => key.startsWith('*') && key.EndsWith('*'));
+                let foundBookmarks = [];
+                if(debutEtoile){
+                    let mySubString = debutEtoile.substring(
+                        str.indexOf("*") + 1, 
+                        str.lastIndexOf("&")
+                    );
+                    foundBookmarks = this.filterArray(searchKeys, objectsList, mySubString);
+                }
+                else if(finEtoile){
+                    let mySubString = finEtoile.substr(1, finEtoile.length);
+
+                    foundBookmarks = this.filterArray(searchKeys, objectsList, mySubString);
+                }
+                else if(contenantEtoile){
+                    let mySubString = contenantEtoile.substring(
+                        contenantEtoile.indexOf("*") + 1, 
+                        contenantEtoile.lastIndexOf("*")
+                    );
+                    foundBookmarks = this.filterArray(searchKeys, objectsList, mySubString);
+                }
+                else{
+                    foundBookmarks = this.filterArray(searchKeys, objectsList);
+                }
+                
+                return foundBookmarks;
+
+                    
+            }
+            filteredAndSortedObjects = foundBookmarks;
+            }
             // todo filter
             // todo sort
+            
             return filteredAndSortedObjects;
-        }
-        return objectsList;
     }
     get(id) {
         for (let object of this.objects()) {
